@@ -18,6 +18,7 @@ namespace API_Custom.Models
             builder.Entity<User>(builder =>
             {
                 builder.ToTable("Users");
+                builder.Property(u => u.IsGoogleAuth).HasDefaultValue(false);
             });
 
             builder.Entity<IdentityRole<Guid>>(builder => { builder.ToTable(name: "Auth_Roles"); });

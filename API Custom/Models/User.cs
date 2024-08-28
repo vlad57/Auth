@@ -8,6 +8,7 @@ namespace API_Custom.Models
     {
         public string? PhoneNumber { get; set; }
         public int? PhoneCode { get; set; }
+        public bool? IsGoogleAuth { get; set; }
     }
 
     internal class AppUserMetadata

@@ -71,6 +71,26 @@ namespace API_Custom.Controllers
             return Ok();
         }
 
+        //@todo Implémenter la vérif du compte (de l'email)
+
+        [HttpPost]
+        [Route("login")]
+        public async Task<IActionResult> Login([FromBody] LoginModel model)
+        {
+            var user = await _userManager.FindByNameAsync(model.Username);
+            if (user != null && await _userManager.CheckPasswordAsync(user, model.Password))
+            {
+                var token = await _authService.GenerateTokenAsync(user);
+
+                return Ok(new
+                {
+                    token = new JwtSecurityTokenHandler().WriteToken(token),
+                    expiration = token.ValidTo
+                });
+            }
+            return Unauthorized();
+        }
+
         [HttpPost]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(BadRequestError), StatusCodes.Status400BadRequest)]
@@ -149,6 +169,10 @@ namespace API_Custom.Controllers
 
             var token = await _authService.GenerateTokenAsync(user!);
 
+            user!.PhoneNumberConfirmed = true;
+
+            await _databaseContext.SaveChangesAsync();
+
             return Ok(new TokenResponse
             {
                 Token = new JwtSecurityTokenHandler().WriteToken(token),
@@ -157,21 +181,29 @@ namespace API_Custom.Controllers
         }
 
         [HttpPost]
-        [Route("login")]
-        public async Task<IActionResult> Login([FromBody] LoginModel model)
+        [ProducesResponseType(typeof(TokenResponse), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(BadRequestError), StatusCodes.Status400BadRequest)]
+        [Route("login-google-auth")]
+        public async Task<IActionResult> LoginGoogleAuth([FromBody] LoginGoogleAuthRequest request)
         {
-            var user = await _userManager.FindByNameAsync(model.Username);
-            if (user != null && await _userManager.CheckPasswordAsync(user, model.Password))
+            try
             {
-                var token = await _authService.GenerateTokenAsync(user);
+                var token = await _authService.GenerateTokenFromGoogleValidationAsync(request);
 
-                return Ok(new
+                return Ok(new TokenResponse
                 {
-                    token = new JwtSecurityTokenHandler().WriteToken(token),
-                    expiration = token.ValidTo
+                    Token = new JwtSecurityTokenHandler().WriteToken(token),
+                    Expiration = token.ValidTo
                 });
             }
-            return Unauthorized();
+            catch (Exception ex)
+            {
+                return BadRequest(new BadRequestError
+                {
+                    Errors = ex.Message,
+                    Status = StatusCodes.Status400BadRequest
+                });
+            }
         }
     }
 }
