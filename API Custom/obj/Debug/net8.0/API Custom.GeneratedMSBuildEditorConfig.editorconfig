@@ -17,3 +17,7 @@ build_property.SupportLocalizedComponentNames =
 build_property.GenerateRazorMetadataSourceChecksumAttributes = 
 build_property.MSBuildProjectDirectory = C:\Users\vladv\Documents\Perso\API Custom\API Custom
 build_property._RazorSourceGeneratorDebug = 
+
+[C:/Users/vladv/Documents/Perso/API Custom/API Custom/Views/Emails/Auth/Register/RegisterConfirmation.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcRW1haWxzXEF1dGhcUmVnaXN0ZXJcUmVnaXN0ZXJDb25maXJtYXRpb24uY3NodG1s
+build_metadata.AdditionalFiles.CssScope = 

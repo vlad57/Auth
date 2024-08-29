@@ -3,7 +3,6 @@ using API_Custom.Models.DTOs.Auth;
 using API_Custom.Services.Interfaces;
 using Google.Apis.Auth;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.Identity.Client;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;

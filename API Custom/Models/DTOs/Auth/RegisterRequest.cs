@@ -2,7 +2,7 @@
 
 namespace API_Custom.Models.DTOs.Auth
 {
-    public class RegisterClassicRequest
+    public class RegisterRequest
     {
         public required string Email { get; set; }
         public required string Username { get; set; }

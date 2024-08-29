@@ -16,6 +16,7 @@ namespace API_Custom.Controllers
         private readonly ISmsService _msService;
         private readonly IUtilsService _utilsService;
         private readonly IAuthService _authService;
+        private readonly IMailService _mailService;
 
         private readonly UserManager<User> _userManager;
         private readonly IConfiguration _configuration;
@@ -28,7 +29,8 @@ namespace API_Custom.Controllers
             DatabaseContext databaseContext,
             ISmsService smsService,
             IUtilsService utilsService,
-            IAuthService authService
+            IAuthService authService,
+            IMailService mailService
         )
         {
             _userManager = userManager;
@@ -38,21 +40,26 @@ namespace API_Custom.Controllers
             _msService = smsService;
             _utilsService = utilsService;
             _authService = authService;
+            _mailService = mailService;
         }
 
         [HttpPost]
-        [Route("register-classic")]
-        public async Task<IActionResult> RegisterClassic([FromBody] RegisterClassicRequest request)
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(BadRequestError), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+        [Route("register")]
+        public async Task<IActionResult> Register([FromBody] RegisterRequest request)
         {
-            var userExists = await _userManager.FindByNameAsync(request.Username);
+            var userExists = await _userManager.FindByEmailAsync(request.Email);
             if (userExists != null)
             {
-                return StatusCode(StatusCodes.Status500InternalServerError);
+                return BadRequest(new { Status = StatusCodes.Status400BadRequest, Errors = "User with this email already exists." });
             }
 
             User user = new User()
             {
                 Email = request.Email,
+                EmailConfirmed = false,
                 SecurityStamp = Guid.NewGuid().ToString(),
                 UserName = request.Username
             };
@@ -65,27 +72,63 @@ namespace API_Custom.Controllers
             var result = await _userManager.CreateAsync(user, request.Password);
             if (!result.Succeeded)
             {
-                return StatusCode(StatusCodes.Status500InternalServerError);
+                return StatusCode(StatusCodes.Status500InternalServerError, result.Errors);
+            }
+
+            try
+            {
+                await _mailService.SendConfirmationRegisterEmailAsync(request.Email);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { Status = StatusCodes.Status400BadRequest, Errors = ex.Message });
             }
 
             return Ok();
         }
 
-        //@todo Implémenter la vérif du compte (de l'email)
+        [HttpPost]
+        [ProducesResponseType(typeof(TokenResponse), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [Route("validate-email-code")]
+        public async Task<IActionResult> ValidateEmailCode([FromBody] ValidateEmailCodeRequest request)
+        {
+            var user = await _userManager.FindByEmailAsync(request.Email);
+
+            if (user != null && user.EmailCode == request.Code)
+            {
+                user.EmailConfirmed = true;
+                user.EmailCode = null;
+
+                await _databaseContext.SaveChangesAsync();
+
+                var token = await _authService.GenerateTokenAsync(user);
+
+                return Ok(new TokenResponse
+                {
+                    Token = new JwtSecurityTokenHandler().WriteToken(token),
+                    Expiration = token.ValidTo
+                });
+            }
+            return Unauthorized();
+        }
 
         [HttpPost]
+        [ProducesResponseType(typeof(TokenResponse), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         [Route("login")]
-        public async Task<IActionResult> Login([FromBody] LoginModel model)
+        public async Task<IActionResult> Login([FromBody] LoginRequest request)
         {
-            var user = await _userManager.FindByNameAsync(model.Username);
-            if (user != null && await _userManager.CheckPasswordAsync(user, model.Password))
+            var user = await _userManager.FindByEmailAsync(request.Email);
+
+            if (user != null && await _userManager.CheckPasswordAsync(user, request.Password))
             {
                 var token = await _authService.GenerateTokenAsync(user);
 
-                return Ok(new
+                return Ok(new TokenResponse
                 {
-                    token = new JwtSecurityTokenHandler().WriteToken(token),
-                    expiration = token.ValidTo
+                    Token = new JwtSecurityTokenHandler().WriteToken(token),
+                    Expiration = token.ValidTo
                 });
             }
             return Unauthorized();
@@ -170,6 +213,7 @@ namespace API_Custom.Controllers
             var token = await _authService.GenerateTokenAsync(user!);
 
             user!.PhoneNumberConfirmed = true;
+            user!.PhoneCode = null;
 
             await _databaseContext.SaveChangesAsync();
 

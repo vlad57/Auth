@@ -150,3 +150,5 @@ C:\Users\vladv\Documents\Perso\API Custom\API Custom\bin\Debug\net8.0\Google.Api
 C:\Users\vladv\Documents\Perso\API Custom\API Custom\bin\Debug\net8.0\Google.Apis.Core.dll
 C:\Users\vladv\Documents\Perso\API Custom\API Custom\bin\Debug\net8.0\System.Management.dll
 C:\Users\vladv\Documents\Perso\API Custom\API Custom\bin\Debug\net8.0\runtimes\win\lib\net7.0\System.Management.dll
+C:\Users\vladv\Documents\Perso\API Custom\API Custom\obj\Debug\net8.0\API Custom.RazorAssemblyInfo.cache
+C:\Users\vladv\Documents\Perso\API Custom\API Custom\obj\Debug\net8.0\API Custom.RazorAssemblyInfo.cs
