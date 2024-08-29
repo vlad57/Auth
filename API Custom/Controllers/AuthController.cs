@@ -87,6 +87,30 @@ namespace API_Custom.Controllers
             return Ok();
         }
 
+        [HttpGet]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(BadRequestError), StatusCodes.Status400BadRequest)]
+        [Route("send-email-code")]
+        public async Task<IActionResult> SendEmailCode([FromQuery] string email)
+        {
+            var userExists = await _userManager.FindByEmailAsync(email);
+            if (userExists != null && userExists.IsGoogleAuth == true)
+            {
+                return BadRequest(new { Status = StatusCodes.Status400BadRequest, Errors = "User registered with Google Account cannot receive confirmation code." });
+            }
+
+            try
+            {
+                await _mailService.SendConfirmationRegisterEmailAsync(email);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { Status = StatusCodes.Status400BadRequest, Errors = ex.Message });
+            }
+
+            return Ok();
+        }
+
         [HttpPost]
         [ProducesResponseType(typeof(TokenResponse), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
